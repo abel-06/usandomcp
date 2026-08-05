@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Página de notificações interativa">
+  <title>Notificação Interativa</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated background orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.4;
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .orb--1 {
+      width: 400px;
+      height: 400px;
+      background: #7b2ff7;
+      top: -100px;
+      left: -100px;
+      animation-delay: 0s;
+    }
+
+    .orb--2 {
+      width: 350px;
+      height: 350px;
+      background: #c471f5;
+      bottom: -80px;
+      right: -80px;
+      animation-delay: -3s;
+    }
+
+    .orb--3 {
+      width: 250px;
+      height: 250px;
+      background: #12c2e9;
+      top: 50%;
+      left: 60%;
+      animation-delay: -5s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -20px) scale(1.05); }
+      66% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+
+    /* Card container */
+    .card {
+      position: relative;
+      z-index: 1;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 60px 50px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 48px rgba(123, 47, 247, 0.25);
+    }
+
+    .card__icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+      animation: ring 2s ease-in-out infinite;
+    }
+
+    @keyframes ring {
+      0%, 100% { transform: rotate(0deg); }
+      10% { transform: rotate(14deg); }
+      20% { transform: rotate(-12deg); }
+      30% { transform: rotate(10deg); }
+      40% { transform: rotate(-6deg); }
+      50% { transform: rotate(0deg); }
+    }
+
+    .card__title {
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .card__subtitle {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.9rem;
+      font-weight: 400;
+      margin-bottom: 36px;
+    }
+
+    /* Notification button */
+    .btn-notify {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 40px;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, #7b2ff7, #c471f5);
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 20px rgba(123, 47, 247, 0.4);
+    }
+
+    .btn-notify:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 30px rgba(123, 47, 247, 0.6);
+    }
+
+    .btn-notify:active {
+      transform: scale(0.97);
+    }
+
+    /* Ripple effect */
+    .btn-notify::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.3) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .btn-notify:hover::after {
+      opacity: 1;
+    }
+
+    .btn-notify__icon {
+      font-size: 1.2rem;
+      transition: transform 0.3s ease;
+    }
+
+    .btn-notify:hover .btn-notify__icon {
+      transform: rotate(15deg) scale(1.1);
+    }
+
+    /* Toast notification */
+    .toast-container {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-left: 4px solid #7b2ff7;
+      border-radius: 14px;
+      color: #fff;
+      font-size: 0.9rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      animation: slideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      max-width: 360px;
+    }
+
+    .toast--exit {
+      animation: slideOut 0.35s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+    }
+
+    .toast__icon {
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .toast__body {
+      flex: 1;
+    }
+
+    .toast__title {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .toast__message {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.8rem;
+    }
+
+    .toast__close {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .toast__close:hover {
+      color: #fff;
+    }
+
+    .toast__progress {
+      position: absolute;
+      bottom: 0;
+      left: 4px;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #7b2ff7, #c471f5);
+      border-radius: 0 0 14px 0;
+      animation: shrink 4s linear forwards;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(100px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(100px) scale(0.9);
+      }
+    }
+
+    @keyframes shrink {
+      from { width: 100%; }
+      to { width: 0%; }
+    }
+
+    /* Pulse animation on click */
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(123, 47, 247, 0.5); }
+      70% { box-shadow: 0 0 0 20px rgba(123, 47, 247, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(123, 47, 247, 0); }
+    }
+
+    .btn-notify--pulse {
+      animation: pulse 0.6s ease-out;
+    }
+
+    /* Counter badge */
+    .card__counter {
+      margin-top: 24px;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .card__counter span {
+      color: #c471f5;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background orbs -->
+  <div class="orb orb--1"></div>
+  <div class="orb orb--2"></div>
+  <div class="orb orb--3"></div>
+
+  <!-- Main card -->
+  <main class="card">
+    <span class="card__icon">🔔</span>
+    <h1 class="card__title">Central de Notificações</h1>
+    <p class="card__subtitle">Clique no botão para enviar uma notificação</p>
+
+    <button class="btn-notify" id="btn-notify" type="button">
+      <span class="btn-notify__icon">✨</span>
+      Enviar Notificação
+    </button>
+
+    <p class="card__counter">Notificações enviadas: <span id="counter">0</span></p>
+  </main>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    const btn = document.getElementById('btn-notify');
+    const toastContainer = document.getElementById('toast-container');
+    const counterEl = document.getElementById('counter');
+    let count = 0;
+
+    const messages = [
+      { title: 'Bem-vindo! 🎉', message: 'Sua primeira notificação foi enviada.' },
+      { title: 'Ótimo trabalho! 🚀', message: 'Você está pegando o jeito!' },
+      { title: 'Incrível! 💜', message: 'Mais uma notificação no caminho.' },
+      { title: 'Fantástico! ⚡', message: 'As notificações continuam chegando!' },
+      { title: 'Impressionante! 🌟', message: 'Você é imparável!' },
+      { title: 'Maravilhoso! 🎯', message: 'Notificação entregue com sucesso.' },
+      { title: 'Excelente! 🔥', message: 'Nada pode te parar agora!' },
+      { title: 'Sensacional! 💫', message: 'Continue clicando, continue brilhando.' },
+    ];
+
+    // Track mouse for ripple effect
+    btn.addEventListener('mousemove', (e) => {
+      const rect = btn.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      btn.style.setProperty('--x', x + '%');
+      btn.style.setProperty('--y', y + '%');
+    });
+
+    btn.addEventListener('click', () => {
+      count++;
+      counterEl.textContent = count;
+
+      // Pulse animation
+      btn.classList.remove('btn-notify--pulse');
+      void btn.offsetWidth; // force reflow
+      btn.classList.add('btn-notify--pulse');
+
+      // Pick a message
+      const msg = messages[(count - 1) % messages.length];
+
+      // Create toast
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <span class="toast__icon">🔔</span>
+        <div class="toast__body">
+          <div class="toast__title">${msg.title}</div>
+          <div class="toast__message">${msg.message}</div>
+        </div>
+        <button class="toast__close" aria-label="Fechar notificação">&times;</button>
+        <div class="toast__progress"></div>
+      `;
+
+      toastContainer.appendChild(toast);
+
+      // Close button
+      const closeBtn = toast.querySelector('.toast__close');
+      closeBtn.addEventListener('click', () => dismissToast(toast));
+
+      // Auto dismiss after 4s
+      setTimeout(() => dismissToast(toast), 4000);
+    });
+
+    function dismissToast(toast) {
+      if (toast.classList.contains('toast--exit')) return;
+      toast.classList.add('toast--exit');
+      toast.addEventListener('animationend', () => toast.remove());
+    }
+  </script>
+</body>
+</html>
